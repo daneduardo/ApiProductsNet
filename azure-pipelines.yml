@@ -47,7 +47,8 @@ stages:
       inputs:
         command: 'test'
         projects: '**/*Tests/*.csproj'
-        arguments: '--configuration $(buildConfiguration)'
+        arguments: '--configuration $(buildConfiguration) --logger trx'
+        publishTestResults: true
 
     # 4. Construir y Publicar Imagen a DockerHub
     - task: Docker@2
