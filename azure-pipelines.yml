@@ -74,4 +74,4 @@ stages:
                   --name products-api-app `
                   --resource-group rg-products-prod `
                   --image $(imageRepository):$(tag) `
-                  --set-env-vars AzureAd__ClientId=$(AzureAd__ClientId) AzureAd__TenantId=$(AzureAd__TenantId) ConnectionStrings__DefaultConnection=$(Prod_Db_Connection)
+                  --set-env-vars AzureAd__ClientId=$(AzureAd__ClientId) AzureAd__TenantId=$(AzureAd__TenantId) ConnectionStrings__DefaultConnection="$(Prod_Db_Connection)"
