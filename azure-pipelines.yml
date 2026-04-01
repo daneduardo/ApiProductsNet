@@ -45,10 +45,16 @@ stages:
     jobs:
       - job: DeployToAzure
         steps:
-          - task: AzureContainerApps@1
-            displayName: "Deploy to Azure Container Apps"
-            inputs:
-              azureSubscription: "AzureServiceConnection"
-              containerAppName: "tu-app-name"
-              resourceGroup: "tu-rg"
-              imageToDeploy: "$(imageName):$(Build.BuildId)"
+          # 3. Deploy to Azure Container Apps
+      - task: AzureContainerApps@1
+        displayName: 'Deploy to Azure Container Apps'
+        inputs:
+          azureSubscription: 'Azure-Service-Conn' # The connection we just created
+          containerAppName: 'products-api-app'
+          resourceGroup: 'rg-products-prod'
+          imageToDeploy: 'docker.io/$(imageRepository):$(tag)'
+   
+          envVars: |
+            AzureAd__ClientId=$(AzureAd__ClientId)
+            AzureAd__TenantId=$(AzureAd__TenantId)
+            ConnectionStrings__DefaultConnection=$(Prod_Db_Connection)
