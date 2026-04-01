@@ -67,7 +67,7 @@ stages:
             displayName: 'Deploy to Container App via CLI'
             inputs:
               azureSubscription: 'Azure-Service-Conn'
-              scriptType: 'bash'
+              scriptType: 'ps'
               scriptLocation: 'inlineScript'
               inlineScript: |
                 az containerapp update \
