@@ -2,9 +2,9 @@ trigger:
 - main
 
 pool:
-  name: 'Default'
+  name: 'MyLocalPool'
   demands: 
-    - agent.name -equals MyLocalAgent
+    - agent.name -equals DINODAN
 
 variables:
   # Conecta con el grupo que creaste en Pipelines > Library
