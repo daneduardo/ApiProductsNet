@@ -70,16 +70,16 @@ stages:
       - job: DeployToContainerApp
         displayName: "Deploy to Azure Container Apps"
         steps:
-          # 5. Despliegue automático (Cumple requerimiento CI/CD)
-          - task: AzureContainerApps@1
-            displayName: "Deploy to Container App"
+          # 5. Despliegue automático
+         - task: AzureCLI@2
+            displayName: 'Deploy to Container App via CLI'
             inputs:
-              azureSubscription: "Azure-Service-Conn"
-              containerAppName: "products-api-app"
-              resourceGroup: "rg-products-prod"
-              imageToDeploy: "$(imageRepository):$(tag)"
-              # Inyectamos las variables de la Library al contenedor
-              envVars: |
-                AzureAd__ClientId=$(AzureAd__ClientId)
-                AzureAd__TenantId=$(AzureAd__TenantId)
-                ConnectionStrings__DefaultConnection=$(Prod_Db_Connection)
+              azureSubscription: 'Azure-Service-Conn'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az containerapp update \
+                  --name products-api-app \
+                  --resource-group rg-products-prod \
+                  --image $(imageRepository):$(tag) \
+                  --set-env-vars AzureAd__ClientId=$(AzureAd__ClientId) AzureAd__TenantId=$(AzureAd__TenantId) ConnectionStrings__DefaultConnection=$(Prod_Db_Connection)
