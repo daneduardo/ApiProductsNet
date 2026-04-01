@@ -3,6 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /app
 
 # Copiar archivos de proyecto y restaurar dependencias
+COPY ["ProductsApi.slnx", "./"]
 COPY ["src/api/ProductsApi.csproj", "src/api/"]
 RUN dotnet restore "src/api/ProductsApi.csproj"
 
@@ -16,7 +17,6 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
 
-# Exponer el puerto 8080 como solicita el requerimiento
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 
