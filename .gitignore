@@ -1,0 +1,38 @@
+# --- .NET / C# ---
+bin/
+obj/
+*.exe
+*.dll
+*.pdb
+*.user
+*.suo
+*.vspscc
+*.vssscc
+*.sln.docstates
+
+# --- Entity Framework ---
+# No ignoramos la carpeta 'Migrations' (es necesaria para el despliegue),
+# pero sí archivos temporales si los hubiera.
+
+# --- Visual Studio & VS Code ---
+.vs/
+.vscode/
+.history/
+.ionide/
+*.code-workspace
+
+# --- Docker ---
+.dockerignore
+# (Opcional) Si guardas datos de la DB localmente en una carpeta:
+/pgdata/
+
+# --- Secretos y Configuración Local ---
+# NUNCA subas archivos que contengan ClientIDs reales o Passwords
+appsettings.Development.json
+*.usersecrets
+.env
+
+# --- OS / Varios ---
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,54 @@
+trigger:
+  - main
+
+pool:
+  vmImage: "ubuntu-latest"
+
+variables:
+  imageName: "tu-usuario-dockerhub/products-api" # Cambia esto
+
+stages:
+  - stage: BuildAndTest
+    jobs:
+      - job: Build
+        steps:
+          - task: DotNetCoreCLI@2
+            displayName: "Restore & Build"
+            inputs:
+              command: "build"
+              projects: "ProductCatalog.sln"
+
+          - task: DotNetCoreCLI@2
+            displayName: "Run Tests"
+            inputs:
+              command: "test"
+              projects: "src/test/ProductApi.Tests/ProductApi.Tests.csproj"
+
+  - stage: PushImage
+    dependsOn: BuildAndTest
+    jobs:
+      - job: Push
+        steps:
+          - task: Docker@2
+            displayName: "Build and Push to DockerHub"
+            inputs:
+              containerRegistry: "DockerHubServiceConnection" # Nombre de tu conexión en Azure DevOps
+              repository: $(imageName)
+              command: "buildAndPush"
+              Dockerfile: "**/Dockerfile"
+              tags: |
+                latest
+                $(Build.BuildId)
+
+  - stage: Deploy
+    dependsOn: PushImage
+    jobs:
+      - job: DeployToAzure
+        steps:
+          - task: AzureContainerApps@1
+            displayName: "Deploy to Azure Container Apps"
+            inputs:
+              azureSubscription: "AzureServiceConnection"
+              containerAppName: "tu-app-name"
+              resourceGroup: "tu-rg"
+              imageToDeploy: "$(imageName):$(Build.BuildId)"

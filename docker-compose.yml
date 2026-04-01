@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: products-db
+    environment:
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: product_catalog
+    ports:
+      - "5432:5432"
+
+  api:
+    build: .
+    container_name: product-api
+    ports:
+      - "9090:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DOTNET_RUNNING_IN_CONTAINER=True
+      - PORT=9090
+      - ConnectionStrings__DefaultConnection=Host=db;Database=product_catalog;Username=devuser;Password=devpassword;Port=5432;
+    depends_on:
+      - db
