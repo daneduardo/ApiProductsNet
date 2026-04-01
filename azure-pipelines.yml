@@ -7,14 +7,11 @@ pool:
     - agent.name -equals DINODAN
 
 variables:
-  # Conecta con el grupo que creaste en Pipelines > Library
   - group: "API-Secrets"
   - name: buildConfiguration
     value: "Release"
-  # Nombre de la conexión que creaste en Service Connections
   - name: dockerRegistryServiceConnection
     value: "DockerHub-Conn"
-  # Tu usuario de DockerHub y el nombre de la imagen
   - name: imageRepository
     value: "danieleduardoperez/product-api"
   - name: tag
@@ -27,21 +24,18 @@ stages:
       - job: Build
         displayName: "Build and Unit Tests"
         steps:
-          # 1. Instalar SDK de .NET 9
           - task: UseDotNet@2
             displayName: "Use .NET 9 SDK"
             inputs:
               packageType: "sdk"
               version: "9.x"
 
-          # 2. Restaurar dependencias
           - task: DotNetCoreCLI@2
             displayName: "Restore Dependencies"
             inputs:
               command: "restore"
               projects: "**/*.csproj"
 
-          # 3. Ejecutar Pruebas (xUnit)
           - task: DotNetCoreCLI@2
             displayName: "Run Unit Tests"
             inputs:
@@ -50,7 +44,6 @@ stages:
               arguments: "--configuration $(buildConfiguration) --logger trx"
               publishTestResults: true
 
-          # 4. Construir y Publicar Imagen a DockerHub
           - task: Docker@2
             displayName: "Build and Push Docker Image"
             inputs:
@@ -70,8 +63,7 @@ stages:
       - job: DeployToContainerApp
         displayName: "Deploy to Azure Container Apps"
         steps:
-          # 5. Despliegue automático
-         - task: AzureCLI@2
+          - task: AzureCLI@2
             displayName: 'Deploy to Container App via CLI'
             inputs:
               azureSubscription: 'Azure-Service-Conn'
