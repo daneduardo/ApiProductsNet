@@ -4,11 +4,9 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. CONFIGURACIÓN DE PUERTO (Requerimiento Técnico: 8080)
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://*:{port}");
 
-// 2. PERSISTENCIA HÍBRIDA (Postgres con Fallback a In-Memory)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 if (!string.IsNullOrEmpty(connectionString) && connectionString != "000")
@@ -26,23 +24,20 @@ else
     Console.WriteLine("--> Using In-Memory Database (Demo Mode)");
 }
 
-// 3. SERVICIOS BASE
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// HealthChecks: Muy valorado en exámenes de integración
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
-// 4. CONFIGURACIÓN DE MIDDLEWARE
-// Siempre habilitamos Swagger para que el evaluador pueda probarlo fácilmente en Azure
+// MIDDLEWARE
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Products API v1");
-    c.RoutePrefix = string.Empty; // Swagger en la raíz (http://app.azurewebsites.net/)
+    c.RoutePrefix = string.Empty; 
 });
 
 app.UseHttpsRedirection();
@@ -50,7 +45,6 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-// 5. MIGRACIONES AUTOMÁTICAS (Solo si usamos Postgres)
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
