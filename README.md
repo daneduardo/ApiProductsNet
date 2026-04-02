@@ -29,7 +29,7 @@ El proyecto implementa una arquitectura moderna con persistencia en **PostgreSQL
    ```bash
    dotnet run
    ```
-   *La API estará disponible en `https://localhost:7123`. Puedes acceder a la documentación interactiva en `https://localhost:7123/swagger`.*
+   *La API estará disponible en `https://localhost:8080`. Puedes acceder a la documentación interactiva en `https://localhost:8080/swagger`.*
 
 ---
 
