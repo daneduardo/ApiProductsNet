@@ -18,7 +18,7 @@ if (!string.IsNullOrEmpty(connectionString) && connectionString != "000")
 }
 else
 {
-    // Si no hay conexión (o es el placeholder 000), usamos Memoria para el examen
+    // Si no hay conexión, usamos In Memory
     builder.Services.AddDbContext<ProductDbContext>(options =>
         options.UseInMemoryDatabase("ProductsInventory"));
     Console.WriteLine("--> Using In-Memory Database (Demo Mode)");
