@@ -133,7 +133,7 @@ stages:
                   --image danieleduardoperez/product-api:latest `
                   --target-port 8080 `
                   --ingress external `
-                  --set-env-vars "AzureAd__ClientId=bcb4359b-87c5-470f-b900-edfdd67b1574" "AzureAd__TenantId=f502be2a-1ca4-44ab-bb4b-408bc89ebcc0" "ConnectionStrings__DefaultConnection=$DB_CONN"
+                  --env-vars "AzureAd__ClientId=bcb4359b-87c5-470f-b900-edfdd67b1574" "AzureAd__TenantId=f502be2a-1ca4-44ab-bb4b-408bc89ebcc0" "ConnectionStrings__DefaultConnection=$DB_CONN"
                 
                 if ($LASTEXITCODE -ne 0) {
                   Write-Host "❌ Deployment failed"
