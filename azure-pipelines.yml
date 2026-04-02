@@ -71,7 +71,7 @@ stages:
               scriptLocation: 'inlineScript'
               inlineScript: |
                 az containerapp update `
-                  --name products-api-app `
+                  --name products-api `
                   --resource-group rg-products-prod `
                   --image $(imageRepository):$(tag) `
                   --set-env-vars AzureAd__ClientId=$(AzureAd__ClientId) AzureAd__TenantId=$(AzureAd__TenantId) ConnectionStrings__DefaultConnection="$env:MAPPED_DB_CONN"
