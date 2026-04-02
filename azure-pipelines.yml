@@ -69,11 +69,13 @@ stages:
               azureSubscription: 'Azure-Service-Conn'
               scriptType: 'ps'
               scriptLocation: 'inlineScript'
-              inlineScript: |               
+              inlineScript: |
+                $connectionString = "$($env:MAPPED_DB_CONN)"
                 az containerapp up `
-                  --name products-api `
-                  --resource-group rg-products-prod `
-                  --image $(imageRepository):$(tag) `
-                  --set-env-vars 'AzureAd__ClientId=bcb4359b-87c5-470f-b900-edfdd67b1574' 'AzureAd__TenantId=f502be2a-1ca4-44ab-bb4b-408bc89ebcc0' 'ConnectionStrings__DefaultConnection=$($env:MAPPED_DB_CONN)'
-            env:
-              MAPPED_DB_CONN: $(Prod_Db_Connection)
+                --name products-api `
+                --resource-group rg-products-prod `
+                --environment env-products-prod `
+                --image danieleduardoperez/product-api:23 `
+                --set-env-vars "AzureAd__ClientId=bcb4359b-87c5-470f-b900-edfdd67b1574 AzureAd__TenantId=f502be2a-1ca4-44ab-bb4b-408bc89ebcc0 ConnectionStrings__DefaultConnection=$connectionString"
+    env:
+      MAPPED_DB_CONN: $(Prod_Db_Connection)
