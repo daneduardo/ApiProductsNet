@@ -63,7 +63,7 @@ stages:
       - job: DeployToContainerApp
         displayName: "Deploy to Azure Container Apps"
         steps:
-          # NUEVO: Instalar Azure CLI si no está disponible
+          # Instalar Azure CLI si no está disponible
           - task: PowerShell@2
             displayName: "Install Azure CLI (if needed)"
             inputs:
@@ -159,7 +159,7 @@ stages:
                 Write-Host "=========================================="
                 Write-Host ""
                 
-                # Capturamos la variable de conexión de Neon de forma segura
+                # Capturar la variable de conexión de forma segura
                 $DB_CONN = "$(Prod_Db_Connection)"
                 
                 # Verificar que tenemos la connection string
@@ -174,67 +174,60 @@ stages:
                 Write-Host "🚀 Deploying to Azure Container Apps..."
                 Write-Host ""
                 
-                # Ejecutamos el deploy
-                try {
-                  az containerapp up `
-                    --name products-api `
-                    --resource-group rg-products-prod `
-                    --environment env-products-prod `
-                    --image danieleduardoperez/product-api:latest `
-                    --target-port 8080 `
-                    --ingress external `
-                    --set-env-vars "AzureAd__ClientId=bcb4359b-87c5-470f-b900-edfdd67b1574" "AzureAd__TenantId=f502be2a-1ca4-44ab-bb4b-408bc89ebcc0" "ConnectionStrings__DefaultConnection=$DB_CONN"
-                  
-                  if ($LASTEXITCODE -eq 0) {
-                    Write-Host ""
-                    Write-Host "=========================================="
-                    Write-Host "✅ DEPLOYMENT SUCCESSFUL!"
-                    Write-Host "=========================================="
-                    Write-Host ""
-                    
-                    # Obtener la URL de la aplicación
-                    Write-Host "📋 Retrieving application details..."
-                    $fqdn = az containerapp show `
-                      --name products-api `
-                      --resource-group rg-products-prod `
-                      --query properties.configuration.ingress.fqdn `
-                      --output tsv
-                    
-                    if ($fqdn) {
-                      Write-Host ""
-                      Write-Host "🌐 Application URLs:"
-                      Write-Host "   Main:         https://$fqdn"
-                      Write-Host "   Health:       https://$fqdn/health"
-                      Write-Host "   API Docs:     https://$fqdn/swagger"
-                      Write-Host ""
-                      
-                      # Verificar health check
-                      Write-Host "🔍 Verifying deployment (checking health endpoint)..."
-                      Start-Sleep -Seconds 10
-                      
-                      try {
-                        $healthResponse = Invoke-WebRequest -Uri "https://$fqdn/health" -UseBasicParsing -TimeoutSec 30
-                        Write-Host "✅ Health check passed: $($healthResponse.StatusCode)"
-                        Write-Host ""
-                      } catch {
-                        Write-Host "⚠️ Health check not responding yet (this is normal, may take 1-2 minutes)"
-                        Write-Host "   Try again in a minute: https://$fqdn/health"
-                        Write-Host ""
-                      }
-                    }
-                    
-                    Write-Host "=========================================="
-                    Write-Host "🎉 Deployment completed successfully!"
-                    Write-Host "=========================================="
-                    
-                  } else {
-                    Write-Host ""
-                    Write-Host "❌ Deployment failed with exit code: $LASTEXITCODE"
-                    exit 1
-                  }
-                  
-                } catch {
+                # Ejecutar el deploy
+                az containerapp up `
+                  --name products-api `
+                  --resource-group rg-products-prod `
+                  --environment env-products-prod `
+                  --image danieleduardoperez/product-api:latest `
+                  --target-port 8080 `
+                  --ingress external `
+                  --set-env-vars "AzureAd__ClientId=bcb4359b-87c5-470f-b900-edfdd67b1574" "AzureAd__TenantId=f502be2a-1ca4-44ab-bb4b-408bc89ebcc0" "ConnectionStrings__DefaultConnection=$DB_CONN"
+                
+                # Verificar el resultado del deployment
+                if ($LASTEXITCODE -ne 0) {
                   Write-Host ""
-                  Write-Host "❌ Deployment error: $_"
+                  Write-Host "❌ Deployment failed with exit code: $LASTEXITCODE"
                   exit 1
                 }
+                
+                Write-Host ""
+                Write-Host "=========================================="
+                Write-Host "✅ DEPLOYMENT SUCCESSFUL!"
+                Write-Host "=========================================="
+                Write-Host ""
+                
+                # Obtener la URL de la aplicación
+                Write-Host "📋 Retrieving application details..."
+                $fqdn = az containerapp show `
+                  --name products-api `
+                  --resource-group rg-products-prod `
+                  --query properties.configuration.ingress.fqdn `
+                  --output tsv
+                
+                if ($fqdn) {
+                  Write-Host ""
+                  Write-Host "🌐 Application URLs:"
+                  Write-Host "   Main:         https://$fqdn"
+                  Write-Host "   Health:       https://$fqdn/health"
+                  Write-Host "   API Docs:     https://$fqdn/swagger"
+                  Write-Host ""
+                  
+                  # Verificar health check
+                  Write-Host "🔍 Verifying deployment (checking health endpoint)..."
+                  Start-Sleep -Seconds 10
+                  
+                  try {
+                    $healthResponse = Invoke-WebRequest -Uri "https://$fqdn/health" -UseBasicParsing -TimeoutSec 30
+                    Write-Host "✅ Health check passed: $($healthResponse.StatusCode)"
+                  } catch {
+                    Write-Host "⚠️ Health check not responding yet (may take 1-2 minutes)"
+                    Write-Host "   Try: https://$fqdn/health"
+                  }
+                  
+                  Write-Host ""
+                }
+                
+                Write-Host "=========================================="
+                Write-Host "🎉 Deployment completed successfully!"
+                Write-Host "=========================================="
