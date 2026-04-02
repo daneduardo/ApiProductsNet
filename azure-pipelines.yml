@@ -70,7 +70,11 @@ stages:
               scriptType: 'ps'
               scriptLocation: 'inlineScript'
               inlineScript: |
-                az containerapp update `
+                az provider register -n Microsoft.App
+                az provider register -n Microsoft.OperationalInsights      
+                Start-Sleep -Seconds 15
+                
+                az containerapp up `
                   --name products-api `
                   --resource-group rg-products-prod `
                   --image $(imageRepository):$(tag) `
