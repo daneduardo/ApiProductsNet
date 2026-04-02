@@ -63,20 +63,178 @@ stages:
       - job: DeployToContainerApp
         displayName: "Deploy to Azure Container Apps"
         steps:
+          # NUEVO: Instalar Azure CLI si no está disponible
+          - task: PowerShell@2
+            displayName: "Install Azure CLI (if needed)"
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "=========================================="
+                Write-Host "Checking Azure CLI installation..."
+                Write-Host "=========================================="
+                
+                # Verificar si Azure CLI ya está instalado
+                try {
+                  $azVersion = az --version 2>$null
+                  if ($LASTEXITCODE -eq 0) {
+                    Write-Host "✅ Azure CLI is already installed"
+                    az --version
+                    exit 0
+                  }
+                } catch {
+                  Write-Host "⚠️ Azure CLI not found in PATH"
+                }
+                
+                Write-Host ""
+                Write-Host "⚙️ Installing Azure CLI..."
+                Write-Host "This may take 3-5 minutes..."
+                Write-Host ""
+                
+                # Descargar instalador MSI
+                $installerUrl = "https://aka.ms/installazurecliwindowsx64"
+                $installerPath = "$env:TEMP\AzureCLI.msi"
+                
+                Write-Host "📥 Downloading from: $installerUrl"
+                try {
+                  Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath -UseBasicParsing
+                  Write-Host "✅ Download completed"
+                } catch {
+                  Write-Host "❌ Download failed: $_"
+                  exit 1
+                }
+                
+                # Instalar silenciosamente
+                Write-Host ""
+                Write-Host "📦 Installing Azure CLI..."
+                $installProcess = Start-Process msiexec.exe -Wait -PassThru -ArgumentList "/i `"$installerPath`" /quiet /norestart /log `"$env:TEMP\AzureCLI-install.log`""
+                
+                if ($installProcess.ExitCode -eq 0) {
+                  Write-Host "✅ Azure CLI installed successfully"
+                  
+                  # Agregar al PATH de la sesión actual
+                  $azureCLIPath = "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin"
+                  if (Test-Path $azureCLIPath) {
+                    $env:PATH = "$azureCLIPath;$env:PATH"
+                    Write-Host "✅ Added to PATH: $azureCLIPath"
+                  }
+                  
+                  # Verificar instalación
+                  Write-Host ""
+                  Write-Host "🔍 Verifying installation..."
+                  az --version
+                  
+                  Write-Host ""
+                  Write-Host "✅ Azure CLI is ready!"
+                } else {
+                  Write-Host "❌ Installation failed with exit code: $($installProcess.ExitCode)"
+                  Write-Host "Check log at: $env:TEMP\AzureCLI-install.log"
+                  
+                  if (Test-Path "$env:TEMP\AzureCLI-install.log") {
+                    Write-Host ""
+                    Write-Host "Last 20 lines of install log:"
+                    Get-Content "$env:TEMP\AzureCLI-install.log" -Tail 20
+                  }
+                  
+                  exit 1
+                }
+              errorActionPreference: 'stop'
+              failOnStderr: false
+          
+          # Deployment a Azure Container Apps
           - task: AzureCLI@2
             displayName: 'Deploy to Container App via CLI'
             inputs:
               azureSubscription: 'Azure-Service-Conn'
               scriptType: 'ps'
               scriptLocation: 'inlineScript'
+              addSpnToEnvironment: true
               inlineScript: |
+                Write-Host "=========================================="
+                Write-Host "Deploying Product API to Azure"
+                Write-Host "=========================================="
+                Write-Host "Container App: products-api"
+                Write-Host "Resource Group: rg-products-prod"
+                Write-Host "Environment: env-products-prod"
+                Write-Host "Image: danieleduardoperez/product-api:latest"
+                Write-Host "=========================================="
+                Write-Host ""
+                
                 # Capturamos la variable de conexión de Neon de forma segura
                 $DB_CONN = "$(Prod_Db_Connection)"
                 
-                # Ejecutamos el deploy inyectando cada variable como un argumento independiente protegido por comillas
-                az containerapp up `
-                  --name products-api `
-                  --resource-group rg-products-prod `
-                  --environment env-products-prod `
-                  --image danieleduardoperez/product-api:latest `
-                  --set-env-vars "AzureAd__ClientId=bcb4359b-87c5-470f-b900-edfdd67b1574" "AzureAd__TenantId=f502be2a-1ca4-44ab-bb4b-408bc89ebcc0" "ConnectionStrings__DefaultConnection=$DB_CONN"
+                # Verificar que tenemos la connection string
+                if ([string]::IsNullOrWhiteSpace($DB_CONN)) {
+                  Write-Host "❌ Error: Database connection string is empty!"
+                  Write-Host "Make sure 'Prod_Db_Connection' is set in the API-Secrets variable group"
+                  exit 1
+                }
+                
+                Write-Host "✅ Database connection string loaded"
+                Write-Host ""
+                Write-Host "🚀 Deploying to Azure Container Apps..."
+                Write-Host ""
+                
+                # Ejecutamos el deploy
+                try {
+                  az containerapp up `
+                    --name products-api `
+                    --resource-group rg-products-prod `
+                    --environment env-products-prod `
+                    --image danieleduardoperez/product-api:latest `
+                    --target-port 8080 `
+                    --ingress external `
+                    --set-env-vars "AzureAd__ClientId=bcb4359b-87c5-470f-b900-edfdd67b1574" "AzureAd__TenantId=f502be2a-1ca4-44ab-bb4b-408bc89ebcc0" "ConnectionStrings__DefaultConnection=$DB_CONN"
+                  
+                  if ($LASTEXITCODE -eq 0) {
+                    Write-Host ""
+                    Write-Host "=========================================="
+                    Write-Host "✅ DEPLOYMENT SUCCESSFUL!"
+                    Write-Host "=========================================="
+                    Write-Host ""
+                    
+                    # Obtener la URL de la aplicación
+                    Write-Host "📋 Retrieving application details..."
+                    $fqdn = az containerapp show `
+                      --name products-api `
+                      --resource-group rg-products-prod `
+                      --query properties.configuration.ingress.fqdn `
+                      --output tsv
+                    
+                    if ($fqdn) {
+                      Write-Host ""
+                      Write-Host "🌐 Application URLs:"
+                      Write-Host "   Main:         https://$fqdn"
+                      Write-Host "   Health:       https://$fqdn/health"
+                      Write-Host "   API Docs:     https://$fqdn/swagger"
+                      Write-Host ""
+                      
+                      # Verificar health check
+                      Write-Host "🔍 Verifying deployment (checking health endpoint)..."
+                      Start-Sleep -Seconds 10
+                      
+                      try {
+                        $healthResponse = Invoke-WebRequest -Uri "https://$fqdn/health" -UseBasicParsing -TimeoutSec 30
+                        Write-Host "✅ Health check passed: $($healthResponse.StatusCode)"
+                        Write-Host ""
+                      } catch {
+                        Write-Host "⚠️ Health check not responding yet (this is normal, may take 1-2 minutes)"
+                        Write-Host "   Try again in a minute: https://$fqdn/health"
+                        Write-Host ""
+                      }
+                    }
+                    
+                    Write-Host "=========================================="
+                    Write-Host "🎉 Deployment completed successfully!"
+                    Write-Host "=========================================="
+                    
+                  } else {
+                    Write-Host ""
+                    Write-Host "❌ Deployment failed with exit code: $LASTEXITCODE"
+                    exit 1
+                  }
+                  
+                } catch {
+                  Write-Host ""
+                  Write-Host "❌ Deployment error: $_"
+                  exit 1
+                }
